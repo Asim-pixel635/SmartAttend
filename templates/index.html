@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartAttend - Face Recognition Attendance</title>
+    <style>
+        /* ===== CSS RESET AND BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+            border-radius: 10px;
+        }
+
+        header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .status.online {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .status.offline {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .card p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #1e8449;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        /* ===== MESSAGE/ALERT BOXES ===== */
+        .message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* ===== ATTENDANCE TABLE ===== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table th,
+        table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #555;
+        }
+
+        table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #888;
+        }
+
+        /* ===== TWO COLUMN LAYOUT ===== */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* ===== SPINNER/LOADING ===== */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+            display: none;
+        }
+
+        .loading.show {
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== STATS CARDS ===== */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .stat-card .label {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        /* ===== BADGES ===== */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .badge-green {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .badge-blue {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ===== HEADER ===== -->
+        <header>
+            <h1>SmartAttend</h1>
+            <p>AI-Powered Face Recognition Attendance System</p>
+            <div class="status online" id="serverStatus">Server Online</div>
+        </header>
+
+        <!-- ===== STATS ===== -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="studentCount">0</div>
+                <div class="label">Registered Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="attendanceCount">0</div>
+                <div class="label">Today's Attendance</div>
+            </div>
+        </div>
+
+        <!-- ===== REGISTER STUDENT SECTION ===== -->
+        <div class="card">
+            <h2>Register New Student</h2>
+            <p>Enter the student's name and click register to capture their face using the webcam.</p>
+            <div class="form-group">
+                <label for="studentName">Student Name:</label>
+                <input type="text" id="studentName" placeholder="e.g., John Doe" autocomplete="off">
+            </div>
+            <button class="btn btn-primary" onclick="registerStudent()" id="registerBtn">
+                Register Student
+                <span class="loading" id="registerLoading"></span>
+            </button>
+            <div class="message" id="registerMessage"></div>
+        </div>
+
+        <!-- ===== MARK ATTENDANCE SECTION ===== -->
+        <div class="card">
+            <h2>Mark Attendance</h2>
+            <p>Click the button below to start face recognition. Look at the webcam when the window opens.</p>
+            <button class="btn btn-success" onclick="markAttendance()" id="markBtn">
+                Mark Attendance
+                <span class="loading" id="markLoading"></span>
+            </button>
+            <div class="message" id="markMessage"></div>
+        </div>
+
+        <!-- ===== ATTENDANCE RECORDS SECTION ===== -->
+        <div class="card">
+            <h2>Attendance Records</h2>
+            <div style="margin-bottom: 15px;">
+                <button class="btn btn-secondary" onclick="loadAttendance()">Refresh Records</button>
+                <button class="btn btn-secondary" onclick="loadTodayAttendance()">Today's Only</button>
+                <button class="btn btn-danger" onclick="clearAttendance()">Clear All</button>
+            </div>
+            <div id="attendanceTable">
+                <p class="empty-state">Click "Refresh Records" to load attendance data.</p>
+            </div>
+        </div>
+
+        <!-- ===== REGISTERED STUDENTS SECTION ===== -->
+        <div class="card">
+            <h2>Registered Students</h2>
+            <button class="btn btn-secondary" onclick="loadStudents()">Refresh List</button>
+            <div id="studentsList" style="margin-top: 15px;">
+                <p class="empty-state">No students registered yet.</p>
+            </div>
+        </div>
+
+        <!-- ===== HOW TO USE SECTION ===== -->
+        <div class="card">
+            <h2>How to Use</h2>
+            <ol style="margin-left: 20px; color: #666;">
+                <li><strong>Register Students:</strong> Enter a name and click "Register Student". The webcam will open to capture the student's face.</li>
+                <li><strong>Mark Attendance:</strong> Click "Mark Attendance" and look at the webcam. The system will automatically recognize the student and mark attendance.</li>
+                <li><strong>View Records:</strong> Use the refresh buttons to see who has marked attendance.</li>
+                <li><strong>Duplicate Prevention:</strong> A student can only mark attendance once per day.</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURATION =====
+        const API_URL = 'http://127.0.0.1:5000';
+
+        // ===== UTILITY FUNCTIONS =====
+        /**
+         * Show a message in the specified element
+         */
+        function showMessage(elementId, text, type = 'info') {
+            const el = document.getElementById(elementId);
+            el.textContent = text;
+            el.className = `message ${type} show`;
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                el.classList.remove('show');
+            }, 5000);
+        }
+
+        /**
+         * Show/hide loading spinner
+         */
+        function setLoading(buttonId, loadingId, isLoading) {
+            const btn = document.getElementById(buttonId);
+            const loading = document.getElementById(loadingId);
+
+            btn.disabled = isLoading;
+            if (isLoading) {
+                loading.classList.add('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+
+        /**
+         * Check if server is online
+         */
+        async function checkServer() {
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                const data = await response.json();
+                document.getElementById('serverStatus').className = 'status online';
+                document.getElementById('serverStatus').textContent = 'Server Online';
+                document.getElementById('studentCount').textContent = data.registered_students;
+                return true;
+            } catch (error) {
+                document.getElementById('serverStatus').className = 'status offline';
+                document.getElementById('serverStatus').textContent = 'Server Offline';
+                return false;
+            }
+        }
+
+        // ===== REGISTRATION =====
+        /**
+         * Register a new student with face capture
+         */
+        async function registerStudent() {
+            const nameInput = document.getElementById('studentName');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showMessage('registerMessage', 'Please enter a student name.', 'error');
+                return;
+            }
+
+            setLoading('registerBtn', 'registerLoading', true);
+
+            try {
+                const response = await fetch(`${API_URL}/api/register/${encodeURIComponent(name)}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('registerMessage', data.message, 'success');
+                    nameInput.value = '';
+                    loadStudents();
+                } else {
+                    showMessage('registerMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('registerMessage', 'Error: Could not connect to server.', 'error');
+            } finally {
+                setLoading('registerBtn', 'registerLoading', false);
+            }
+        }
+
+        // ===== ATTENDANCE MARKING =====
+        /**
+         * Mark attendance using face recognition
+         */
+        async function markAttendance() {
+            setLoading('markBtn', 'markLoading', true);
+
+            try {
+                const response = await fetch(`${API_URL}/api/mark_attendance`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('markMessage', data.message, 'success');
+                    loadAttendance();
+                } else {
+                    showMessage('markMessage', data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('markMessage', 'Error: Could not connect to server.', 'error');
+            } finally {
+                setLoading('markBtn', 'markLoading', false);
+            }
+        }
+
+        // ===== ATTENDANCE RECORDS =====
+        /**
+         * Load all attendance records
+         */
+        async function loadAttendance() {
+            try {
+                const response = await fetch(`${API_URL}/api/attendance`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderAttendanceTable(data.attendance, 'All Attendance Records');
+                    document.getElementById('attendanceCount').textContent = data.attendance.filter(
+                        r => r.date === new Date().toISOString().split('T')[0]
+                    ).length;
+                }
+            } catch (error) {
+                console.error('Error loading attendance:', error);
+            }
+        }
+
+        /**
+         * Load today's attendance only
+         */
+        async function loadTodayAttendance() {
+            try {
+                const response = await fetch(`${API_URL}/api/attendance/today`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderAttendanceTable(data.attendance, `Attendance for ${data.date}`);
+                }
+            } catch (error) {
+                console.error('Error loading today\'s attendance:', error);
+            }
+        }
+
+        /**
+         * Render attendance data as a table
+         */
+        function renderAttendanceTable(records, title) {
+            const container = document.getElementById('attendanceTable');
+
+            if (records.length === 0) {
+                container.innerHTML = '<p class="empty-state">No attendance records found.</p>';
+                return;
+            }
+
+            let html = `
+                <p style="margin-bottom: 10px; font-weight: bold; color: #555;">${title} (${records.length} records)</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            records.forEach((record, index) => {
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><span class="badge badge-green">${record.name}</span></td>
+                        <td>${record.date}</td>
+                        <td>${record.time}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        /**
+         * Clear all attendance records
+         */
+        async function clearAttendance() {
+            if (!confirm('Are you sure you want to clear ALL attendance records? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/attendance/clear`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('markMessage', data.message, 'success');
+                    loadAttendance();
+                }
+            } catch (error) {
+                console.error('Error clearing attendance:', error);
+            }
+        }
+
+        // ===== STUDENTS LIST =====
+        /**
+         * Load registered students list
+         */
+        async function loadStudents() {
+            try {
+                const response = await fetch(`${API_URL}/api/students`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const container = document.getElementById('studentsList');
+                    document.getElementById('studentCount').textContent = data.count;
+
+                    if (data.students.length === 0) {
+                        container.innerHTML = '<p class="empty-state">No students registered yet.</p>';
+                        return;
+                    }
+
+                    let html = `
+                        <p style="margin-bottom: 10px;">Total: ${data.count} students</p>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                    `;
+
+                    data.students.forEach(student => {
+                        html += `
+                            <div class="stat-card" style="padding: 15px; text-align: left;">
+                                <span class="badge badge-blue">${student}</span>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading students:', error);
+            }
+        }
+
+        // ===== INITIALIZATION =====
+        // Check server status and load initial data when page loads
+        window.onload = function() {
+            checkServer().then(online => {
+                if (online) {
+                    loadStudents();
+                    loadAttendance();
+                }
+            });
+        };
+
+        // Allow Enter key to submit registration
+        document.getElementById('studentName').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                registerStudent();
+            }
+        });
+    </script>
+</body>
+</html>
+
